@@ -1,13 +1,5 @@
 [app]
 
-[android]
- # ...другие настройки
- android.api = 33 
- android.minapi = 21 
- android.sdk = 29
- android.ndk = 21.4.7075529
- android.ndk_api = 21
-
 # (str) Title of your application
 title = AppMgera
 
