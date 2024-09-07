@@ -1,54 +1,62 @@
-name: Build
+name: CI for Kivy App
+
 on:
   push:
-    branches-ignore:
-      - data
-      - gh-pages
-    tags:
-      - '**'
-  pull_request:
-    branches-ignore:
-      - data
-      - gh-pages
+    branches: [ main ]
 
 jobs:
-  # Build job. Builds app for Android with Buildozer
-  build-android:
-    name: Build for Android
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v2
-        with:
-          path: master
-
-      - name: Build with Buildozer
-        uses: ./master # REPLACE WITH ArtemSBulgakov/buildozer-action@v1
-        id: buildozer
-        with:
-          repository_root: master
-          workdir: test_app
-          buildozer_version: stable
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: package
-          path: ${{ steps.buildozer.outputs.filename }}
-
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          path: data
-          ref: data # Branch name
 
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.7
-          architecture: x64
+          python-version: '3.7' # Укажите версию Python
 
-      - name: Push binary to data branch
-        if: github.event_name == 'push'
-        run: python master/.ci/move_binary.py "${{ steps.buildozer.outputs.filename }}" master data bin
+      - name: Install buildozer
+        run: pip install buildozer
+
+      - name: Install Kivy
+        run: pip install kivy
+
+      - name: Install Android SDK
+        uses: actions/setup-android@v2
+        with:
+          sdk-version: 33 # Укажите нужную версию SDK (33 для Android 13)
+          # Дополнительные опции, например, для NDK:
+          # ndk-version: r25c # Укажите версию NDK (r25c для Android 13)
+          # platform-version: 33 # Укажите версию Platform SDK (33 для Android 13)
+
+      - name: Install Java
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11' # Укажите нужную версию Java 
+
+      - name: Install adb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y adb
+
+      - name: Install Aidl
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y android-aidl
+
+      - name: Set up Environment
+        run: |
+          export ANDROID_HOME=$HOME/android-sdk
+          export PATH=$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools
+          export JAVA_HOME=$HOME/.jdk/jdk-11
+
+      - name: Build APK
+        run: buildozer android debug # Запускает сборку APK
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v2
+        with:
+          name: kivy-apk
+          path: dist/appMgera-0.1-debug.apk
